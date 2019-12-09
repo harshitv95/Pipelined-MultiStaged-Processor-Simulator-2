@@ -1,4 +1,5 @@
 #include "instruction.h"
+#include "functional_units.h"
 
 #ifndef _APEX_CPU_H_
 #define _APEX_CPU_H_
@@ -48,6 +49,8 @@ typedef struct CPU_Stage
   int empty;
   int stalled;		// Flag to indicate, stage is stalled
   int flushed;
+
+  functional_unit_type fu;
 
 } CPU_Stage;
 

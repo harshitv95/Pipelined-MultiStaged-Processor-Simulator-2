@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "cpu.h"
+#include "functional_units.h"
 
 /* Set this flag to 1 to enable debug messages */
 int ENABLE_DEBUG_MESSAGES = 0;
