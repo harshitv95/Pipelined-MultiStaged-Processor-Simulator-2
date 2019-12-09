@@ -1,5 +1,4 @@
 #include "instruction.h"
-#include "functional_units.h"
 
 #ifndef _APEX_CPU_H_
 #define _APEX_CPU_H_
@@ -18,10 +17,15 @@ enum
 {
   F,
   DRF,
-  EX1,
-  EX2,
-  MEM1,
-  MEM2,
+  
+  FU_INT_1,
+  FU_INT_2,
+  FU_MUL_1,
+  FU_MUL_2,
+  FU_MUL_3,
+  FU_BR,
+  FU_MEM,
+
   WB,
   NUM_STAGES
 };
@@ -138,9 +142,7 @@ int
 decode(APEX_CPU* cpu);
 
 int
-execute1(APEX_CPU* cpu);
-int
-execute2(APEX_CPU* cpu);
+execute(APEX_CPU* cpu);
 
 int
 memory1(APEX_CPU* cpu);

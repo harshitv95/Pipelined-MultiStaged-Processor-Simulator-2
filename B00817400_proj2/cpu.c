@@ -1,11 +1,3 @@
-/*
- *  cpu.c
- *  Contains APEX cpu pipeline implementation
- *
- *  Author :
- *  Gaurav Kothari (gkothar1@binghamton.edu)
- *  State University of New York, Binghamton
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -319,8 +311,6 @@ fetch(APEX_CPU* cpu)
       else
         do_fetch(cpu, stage, code_index);
     }
-
-    cpu->fetched_before_stall = stage->stalled;
   }
   stage->flushed = 0;
   return 0;

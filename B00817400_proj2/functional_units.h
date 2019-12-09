@@ -10,12 +10,12 @@ typedef enum {
     INT_FU,
     MUL_FU,
     BRANCH_FU,
-    MEM_FU
+    MEM_FU,
+
+    __NUM_FUs__
 } functional_unit_type;
 
-int fu_available(functional_unit_type fu);
-
-void execute(APEX_CPU* cpu);
+int is_fu_available(functional_unit_type fu);
 
 void _fu_int(APEX_CPU* cpu);
 void _fu_mul(APEX_CPU* cpu);
