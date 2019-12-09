@@ -5,6 +5,7 @@
 
 typedef struct ROB_Entry {
     int rob_id;
+    // Add more fields here
 } ROB_Entry;
 
 
