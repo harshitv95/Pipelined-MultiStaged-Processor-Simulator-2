@@ -55,6 +55,9 @@ typedef struct CPU_Stage
   int flushed;
 
   functional_unit_type fu;
+  
+  
+
 
 } CPU_Stage;
 
@@ -119,6 +122,7 @@ typedef struct APEX_CPU
   int flags_valid[NUM_FLAGS];
 
   int fetched_before_stall;
+
 
 } APEX_CPU;
 

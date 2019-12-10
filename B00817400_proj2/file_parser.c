@@ -14,6 +14,7 @@
 #include "cpu.h"
 
 
+
 static char* remove_char(char* str, char find){
     char *src, *dst;
     for (src = dst = str; *src != '\0'; src++) {

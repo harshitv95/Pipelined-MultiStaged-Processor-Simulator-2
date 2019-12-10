@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "functional_units.h"
 
+
 /* Set this flag to 1 to enable debug messages */
 int ENABLE_DEBUG_MESSAGES = 0;
 // #define ENABLE_DEBUG_MESSAGES 1
@@ -480,7 +481,27 @@ decode(APEX_CPU* cpu)
     int has_dep = has_dependency(cpu, DRF);
     change_stall_status( DRF, cpu, has_dep );
     if (has_dep)
-      cpu->stage[EX1] = create_bubble();
+     // cpu->stage[EX1] = create_bubble();
+     //===========================ASHMEET IMPLEMENTATION===========================
+      //1.run
+      //2.InstructionQueue(IQ):structure:DONE
+      //3.check.
+      //4.execute functions
+      //If it has dependency then send the instruction to Issue Queue(IQ) if it is not full(Insert_in_IQ)
+      //if IQ is full then stall or call create_bubble()(is_IQ_full)
+      //check from IQ which Instruction dependency is now over
+      //send that Instruction to EX1(pop_instruction)
+      // if 2 or more instructions are there whose dependency is over then take the earliest one from index
+      //if no instructions are there whose dependency is over then stall or call create_bubble()
+
+      //Implement is iq full or not then call that function here
+      //stage->issueQueueList[]
+
+      
+
+
+
+     //===========================ASHMEET IMPLEMENTATION===========================
   }
 
   if (!stage->busy && !stage->stalled & !stage->flushed) {
