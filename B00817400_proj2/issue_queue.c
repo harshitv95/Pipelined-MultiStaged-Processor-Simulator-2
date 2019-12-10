@@ -17,25 +17,18 @@ int is_iq_full(){
     return i;
 }
 
-int insert_to_iq(APEX_Instruction* instruction){
+int insert_to_iq(CPU_Stage* instruction){
     int idx;
     if ((idx = is_iq_full())==-1)
         return 0;
     else
-    {
         issueQueueList[idx]=instruction;
-    }
 }
 
 
 
-APEX_Instruction* pop_from_iq(int index){
-
-    
+CPU_Stage* pop_from_iq(int index){
     APEX_Instruction instruction = issueQueueList[index];
     issueQueueList[index]=NULL;     
     return instruction;
-
-
-
 }

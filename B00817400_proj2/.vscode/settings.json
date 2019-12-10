@@ -9,6 +9,7 @@
         "issue_queue.h": "c",
         "load_store_queue.h": "c",
         "instruction_commons.h": "c",
-        "cpu_commons.h": "c"
+        "cpu_commons.h": "c",
+        "config.h": "c"
     }
 }
