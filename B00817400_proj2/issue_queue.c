@@ -2,13 +2,9 @@
 #include "issue_queue.h"
 
 
-
 int is_iq_full(){
-    
-    int i =7;
-    while (i>=0)
-
-    {
+    int i = 7;
+    while (i>=0) {
         if (issueQueueList[i] != NULL)//check the issueQueue is empty or not
             i--;
         else
