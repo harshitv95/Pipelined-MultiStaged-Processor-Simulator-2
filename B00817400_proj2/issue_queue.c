@@ -24,7 +24,7 @@ int insert_to_iq(CPU_Stage* instruction){
 
 
 CPU_Stage* pop_from_iq(int index){
-    APEX_Instruction instruction = issueQueueList[index];
+    CPU_Stage* instruction = issueQueueList[index];
     issueQueueList[index]=NULL;     
     return instruction;
 }
