@@ -1,5 +1,5 @@
-#include "cpu.h"
 #include "functional_units.h"
+#include "issue_queue.h"
 #include "reorder_buffer.h"
 
 int __fu_busy[__NUM_FUs__];

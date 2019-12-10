@@ -4,6 +4,7 @@
         "instruction.h": "c",
         "string.h": "c",
         "reorder_buffer.h": "c",
-        "functional_units.h": "c"
+        "functional_units.h": "c",
+        "flags.h": "c"
     }
 }

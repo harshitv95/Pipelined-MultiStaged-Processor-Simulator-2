@@ -1,15 +1,9 @@
+#include "flags.h"
 #include "instruction.h"
+#include "reorder_buffer.h"
 
 #ifndef _APEX_CPU_H_
 #define _APEX_CPU_H_
-/**
- *  cpu.h
- *  Contains various CPU and Pipeline Data structures
- *
- *  Author :
- *  Gaurav Kothari (gkothar1@binghamton.edu)
- *  State University of New York, Binghamton
- */
 
 #define NUM_FWD_BUSES 2
 
@@ -17,6 +11,7 @@ enum
 {
   F,
   DRF,
+  IQ,
   
   FU_INT_1,
   FU_INT_2,
@@ -26,9 +21,22 @@ enum
   FU_BR,
   FU_MEM,
 
-  WB,
+  // WB,
   NUM_STAGES
 };
+
+typedef enum {
+    // 0, Default int value, thus default functional unit of an instruction will be No Type
+    __NO_FU__,
+
+    INT_FU,
+    MUL_FU,
+    BRANCH_FU,
+    MEM_FU,
+
+    __NUM_FUs__
+} functional_unit_type;
+
 
 /* Model of CPU stage latch */
 typedef struct CPU_Stage
@@ -36,10 +44,6 @@ typedef struct CPU_Stage
   int pc;		    // Program Counter
   // char opcode[128];	// Operation Code
   opcode opcode;
-  int rs1;		    // Source-1 Register Address
-  int rs2;		    // Source-2 Register Address
-  int rs3;		    // Source-3 Register Address
-  int rd;		      // Destination Register Address
   int imm;		    // Literal Value
   int rs1_value;	// Source-1 Register Value
   int rs2_value;	// Source-2 Register Value
@@ -47,12 +51,23 @@ typedef struct CPU_Stage
   int rs1_valid;  // Source-1 valid
   int rs2_valid;
   int rs3_valid;
-  int buffer;		// Latch to hold some value
+  int buffer;		    // Latch to hold some value
   int mem_address;	// Computed Memory Address
-  int busy;		    // Flag to indicate, stage is performing some action
+  int busy;	   	    // Flag to indicate, stage is performing some action
   int empty;
-  int stalled;		// Flag to indicate, stage is stalled
+  int stalled;		  // Flag to indicate, stage is stalled
   int flushed;
+
+  int a_rs1;		    // Source-1 Register Address
+  int a_rs2;		    // Source-2 Register Address
+  int a_rs3;		    // Source-2 Register Address
+  int a_rd;
+  int imm;		      // Literal Value
+
+  int p_rs1;
+  int p_rs2;
+  int p_rs3;
+  int p_rd;
 
   functional_unit_type fu;
   
@@ -69,14 +84,6 @@ typedef struct FWD_BUS
   int valid;
 } FWD_BUS;
 
-/* Flags */
-typedef enum {
-  ZERO_FLAG,
-  JUMP_FLAG,
-  HALT_FLAG,
-
-  NUM_FLAGS
-} flags;
 
 /* Model of APEX CPU */
 typedef struct APEX_CPU

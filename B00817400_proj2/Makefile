@@ -12,7 +12,7 @@ PROGS= apex_sim
 all: $(PROGS) 
 
 # Add all object files to be linked in sequence
-APEX_OBJS:=instruction.o file_parser.o cpu.o main.o
+APEX_OBJS:=instruction.o file_parser.o cpu.o issue_queue.o reorder_buffer.o load_store_queue.o functional_units.o main.o
 
 apex_sim: $(APEX_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
