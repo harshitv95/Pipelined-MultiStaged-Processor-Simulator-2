@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "functional_units.h"
 
 /* Set this flag to 1 to enable debug messages */
 int ENABLE_DEBUG_MESSAGES = 0;
@@ -255,11 +254,11 @@ void do_fetch(APEX_CPU* cpu, CPU_Stage* stage, int code_index) {
   APEX_Instruction* current_ins = &cpu->code_memory[code_index];
   stage->opcode = current_ins->opcode;
   stage->rd = current_ins->rd;
-  stage->rs1 = current_ins->rs1;
-  stage->rs2 = current_ins->rs2;
-  stage->rs3 = current_ins->rs3;
+  stage->a_rs1 = current_ins->rs1;
+  stage->a_rs2 = current_ins->rs2;
+  stage->a_rs3 = current_ins->rs3;
   stage->imm = current_ins->imm;
-  stage->rd = current_ins->rd;
+  stage->a_rd = current_ins->rd;
 
   /* Update PC for next instruction */
   cpu->pc += 4;
@@ -941,35 +940,14 @@ memory2(APEX_CPU* cpu)
  * 				 implementation
  */
 int
-writeback(APEX_CPU* cpu)
+rob_retire(APEX_CPU* cpu)
 {
-  CPU_Stage* stage = &cpu->stage[WB];
-  if (!stage->busy && !stage->stalled) {
+  // CPU_Stage* stage = &cpu->stage[WB];
 
-    /* Update register file */
-    switch(stage->opcode) {
-      case _BUBBLE:
-      case STORE:
-      case STR:
-      case NOP:
-      case JUMP:
-      case BNZ:
-      case BZ:
-      case HALT:
-        // Do Nothing in WB Stage
-        break;
-
-      case ADD:
-      case ADDL:
-      case SUB:
-      case SUBL:
-      case MUL:
-        // Set Z Flag for Arithmetic operations
-        set_flag(cpu, ZERO_FLAG, (stage->buffer == 0));
-      default:
-        register_wite(stage, cpu);
-        break;
-    }
+  if (is_head_valid())
+    retire(pop_from_rob());
+  
+    if (!stage->busy && !stage->stalled) {
 
   switch(stage->opcode) {
     // Register operations forward data
@@ -1039,7 +1017,7 @@ APEX_cpu_run(APEX_CPU* cpu, int numCycles)
       printf("\n----------------------------------- CLOCK CYCLE %d -----------------------------------\n", cpu->clock);
 
     invalidate_forward_buses(cpu);
-    writeback(cpu);
+    rob_retire(cpu);
     memory2(cpu);
     memory1(cpu);
     execute2(cpu);
