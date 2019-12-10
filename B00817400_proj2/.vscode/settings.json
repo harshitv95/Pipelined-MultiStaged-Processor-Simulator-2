@@ -5,6 +5,10 @@
         "string.h": "c",
         "reorder_buffer.h": "c",
         "functional_units.h": "c",
-        "flags.h": "c"
+        "flags.h": "c",
+        "issue_queue.h": "c",
+        "load_store_queue.h": "c",
+        "instruction_commons.h": "c",
+        "cpu_commons.h": "c"
     }
 }
