@@ -5,7 +5,7 @@
 
 
 int is_iq_full(){
-    int i = 7;
+    int i = ISSUE_QUEUE_CAPACITY-1;
     while (i>=0) {
         if (issueQueueList[i] != NULL)//check the issueQueue is empty or not
             i--;
@@ -19,11 +19,14 @@ int insert_to_iq(CPU_Stage* instruction){
     int idx;
     if ((idx = is_iq_full())==-1)
         return 0;
-    else
+    else{
         issueQueueList[idx]=instruction;
+        return 1;
+    }
+        
 }
 
-CPU_Stage* get_available_instructions(){
+CPU_Stage* get_iq_available_instructions(){
 
  CPU_Stage* inst_array[ISSUE_QUEUE_CAPACITY];
 for (int i = 0; i < ISSUE_QUEUE_CAPACITY; i++)
@@ -50,23 +53,26 @@ for (int i = 0; i < ISSUE_QUEUE_CAPACITY; i++)
         
         case LOAD:
         case ADDL:
-        case SUBL:
+        case SUBL:{
             
                 if(issueQueueList[i].rs1_valid)
                     inst_array[i]=issueQueueList[i];
                 else
                 inst_array[i]=NULL;
                 break;
-            
-        case STR:
+                }
+        case STR:{
             if(issueQueueList[i].rs1_valid && issueQueueList[i].rs2_valid &&
                 issueQueueList[i].rs3_valid )
                 inst_array[i]=issueQueueList[i];
             else
                 inst_array[i]=NULL;
             break;
+            }
         case BZ:
         case BNZ:
+        //TODO: Change the implementation, Move flag_valid in commons
+        //After moving change implementation of BNZ case. otherwise compilation error will occur
             return !(
                 cpu->forward_zero->valid ||
                 flag_valid(ZERO_FLAG, cpu));
