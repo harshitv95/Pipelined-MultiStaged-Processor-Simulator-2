@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include "issue_queue.h"
+# include "instruction_commons.h"
+#include "cpu_commons.h"
 
 
 int is_iq_full(){
@@ -21,6 +23,60 @@ int insert_to_iq(CPU_Stage* instruction){
         issueQueueList[idx]=instruction;
 }
 
+CPU_Stage* get_available_instructions(){
+
+ CPU_Stage* inst_array[ISSUE_QUEUE_CAPACITY];
+for (int i = 0; i < ISSUE_QUEUE_CAPACITY; i++)
+{
+
+    switch (issueQueueList[i].opcode)
+    {
+        case ADD:
+        case LDR:
+        case SUB:
+        case MUL:
+        case AND:
+        case OR:
+        case EXOR:
+        case STORE:{
+            if (issueQueueList[i].rs1_valid && issueQueueList[i].rs2_valid)
+                inst_array[i]=issueQueueList[i]; 
+            else
+                inst_array[i]=NULL;   
+            break;
+            }
+                   
+                
+        
+        case LOAD:
+        case ADDL:
+        case SUBL:
+            
+                if(issueQueueList[i].rs1_valid)
+                    inst_array[i]=issueQueueList[i];
+                else
+                inst_array[i]=NULL;
+                break;
+            
+        case STR:
+            if(issueQueueList[i].rs1_valid && issueQueueList[i].rs2_valid &&
+                issueQueueList[i].rs3_valid )
+                inst_array[i]=issueQueueList[i];
+            else
+                inst_array[i]=NULL;
+            break;
+        case BZ:
+        case BNZ:
+            return !(
+                cpu->forward_zero->valid ||
+                flag_valid(ZERO_FLAG, cpu));
+    }
+
+    inst_array[i] =issueQueueList[i]; 
+    
+}
+return inst_array;
+}
 
 
 CPU_Stage* pop_from_iq(int index){
