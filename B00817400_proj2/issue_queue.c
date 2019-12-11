@@ -80,7 +80,7 @@ return inst_array;
 
 
 CPU_Stage* pop_from_iq(int index){
-    APEX_Instruction instruction = issueQueueList[index];
+    CPU_Stage* instruction = issueQueueList[index];
     issueQueueList[index]=NULL;     
     return instruction;
 }

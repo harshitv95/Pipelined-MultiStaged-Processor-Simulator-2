@@ -5,7 +5,7 @@
 #ifndef _APEX_IQ_H_
 #define _APEX_IQ_H_
 
-CPU_Stage issueQueueList[ISSUE_QUEUE_CAPACITY];
+CPU_Stage* issueQueueList[ISSUE_QUEUE_CAPACITY];
 
 int is_iq_full();
 
