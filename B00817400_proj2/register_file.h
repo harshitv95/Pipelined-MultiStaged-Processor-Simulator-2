@@ -10,6 +10,7 @@ typedef struct P_REG {
 // To store values
 P_REG physical_registers[P_REG_COUNT];
 int architectural_registers[A_REG_COUNT];
+int _architectural_register_dirty[A_REG_COUNT];
 
 int rename_table[A_REG_COUNT];
 int renamed_table[P_REG_COUNT];
@@ -19,7 +20,7 @@ int waiting[P_REG_COUNT][ISSUE_QUEUE_CAPACITY];
 
 void init_reg_file();
 
-int rename(int a_reg);
+int rename_register(int a_reg);
 
 int get_physical_reg_address(int a_reg);
 
@@ -32,6 +33,8 @@ int physical_register_valid(int p_reg);
 
 // Writes to physical register only
 void physical_register_write(int p_reg, int value, int flag);
+
+void architectural_register_write(int p_reg, int a_reg, int value);
 
 // Reads from Physical Register only
 int physical_register_read(int p_reg);

@@ -39,8 +39,8 @@ APEX_cpu_init(const char *filename, int debug)
   /* Initialize PC, Registers and all pipeline stages */
   cpu->pc = 4000;
   cpu->reg_count = num_arch_registers;
-  memset(cpu->regs, 0, sizeof(int) * num_arch_registers);
-  memset(cpu->regs_valid, 1, sizeof(int) * num_arch_registers);
+  // memset(cpu->regs, 0, sizeof(int) * num_arch_registers);
+  // memset(cpu->regs_valid, 1, sizeof(int) * num_arch_registers);
   memset(cpu->stage, 0, sizeof(CPU_Stage) * NUM_STAGES);
   memset(cpu->data_memory, 0, sizeof(int) * 4000);
   memset(cpu->flags, 0, sizeof(int) * NUM_FLAGS); // Important to initialize all flags with 0
@@ -49,10 +49,10 @@ APEX_cpu_init(const char *filename, int debug)
   {
     cpu->flags_valid[i] = 1;
   }
-  for (int i = 0; i < num_arch_registers; i++)
-  {
-    cpu->regs_valid[i] = 1;
-  }
+  // for (int i = 0; i < num_arch_registers; i++)
+  // {
+  //   cpu->regs_valid[i] = 1;
+  // }
 
   /* Parse input file and create code memory */
   cpu->code_memory = create_code_memory(filename, &cpu->code_memory_size);
@@ -202,12 +202,13 @@ display_register_contents(APEX_CPU *cpu)
 {
   printf(
       "\n=============== STATE OF ARCHITECTURAL REGISTER FILE ==========\n");
-  for (int i = 0; i < cpu->reg_count; i++)
+  for (int i = 0; i < A_REG_COUNT; i++)
   {
-    printf("|\tREG[%02d]\t|\tValue = %-6d\t|\tStatus = %s\t|\n",
+    if (_architectural_register_dirty[i])
+    printf("|\tREG[%02d]\t|\tValue = %-6d\t|\n",
            i,
-           cpu->regs[i],
-           cpu->regs_valid[i] ? "VALID" : "INVALID");
+           architectural_registers[i]
+    );
   }
 }
 
@@ -264,12 +265,11 @@ void do_fetch(APEX_CPU *cpu, CPU_Stage *stage, int code_index)
 {
   APEX_Instruction *current_ins = &cpu->code_memory[code_index];
   stage->opcode = current_ins->opcode;
-  stage->rd = current_ins->rd;
+  stage->a_rd = current_ins->rd;
   stage->a_rs1 = current_ins->rs1;
   stage->a_rs2 = current_ins->rs2;
   stage->a_rs3 = current_ins->rs3;
   stage->imm = current_ins->imm;
-  stage->a_rd = current_ins->rd;
   stage->inst_text = current_ins->instText;
   stage->renamed_inst_text = current_ins->instText;
 
@@ -361,7 +361,7 @@ forward_bus_read(APEX_CPU *cpu, CPU_Stage *stage)
   switch (stage->opcode)
   {
   case STR:
-    if (!stage->rs3_valid && (n = check_forwarded_bus_data(stage->rs3, cpu)) > -1)
+    if (!stage->rs3_valid && (n = check_forwarded_bus_data(stage->p_rs3, cpu)) > -1)
     {
       stage->rs3_value = cpu->forward[n].data;
       stage->rs3_valid = 1;
@@ -374,7 +374,7 @@ forward_bus_read(APEX_CPU *cpu, CPU_Stage *stage)
   case EXOR:
   case OR:
   case AND:
-    if (!stage->rs2_valid && (n = check_forwarded_bus_data(stage->rs2, cpu)) > -1)
+    if (!stage->rs2_valid && (n = check_forwarded_bus_data(stage->p_rs2, cpu)) > -1)
     {
       stage->rs2_value = cpu->forward[n].data;
       stage->rs2_valid = 1;
@@ -383,7 +383,7 @@ forward_bus_read(APEX_CPU *cpu, CPU_Stage *stage)
   case SUBL:
   case JUMP:
   case LOAD:
-    if (!stage->rs1_valid && (n = check_forwarded_bus_data(stage->rs1, cpu)) > -1)
+    if (!stage->rs1_valid && (n = check_forwarded_bus_data(stage->p_rs1, cpu)) > -1)
     {
       stage->rs1_value = cpu->forward[n].data;
       stage->rs1_valid = 1;
@@ -426,59 +426,59 @@ static void change_stall_status(int stageId, APEX_CPU *cpu, int stallStatus)
   }
 }
 
-static int has_dependency(APEX_CPU *cpu, int stageId)
-{
-  if (!cpu)
-    return 0;
-  CPU_Stage *stage = &cpu->stage[stageId];
-  if (!stage)
-    return 0;
-  switch (stage->opcode)
-  {
-  case ADD:
-  case LDR:
-  case SUB:
-  case MUL:
-  case AND:
-  case OR:
-  case EXOR:
-  case STORE:
-    return !(
-        (stage->rs1_valid || register_valid(stage->rs1, cpu)) &&
-        (stage->rs2_valid || register_valid(stage->rs2, cpu))
-        // && register_valid(stage->rd, cpu) // Output dependency
-    );
-  case LOAD:
-  case ADDL:
-  case SUBL:
-    return !(
-        (stage->rs1_valid || register_valid(stage->rs1, cpu))
-        // && register_valid(stage->rd, cpu) // Output dependency
-    );
-  // case MOVC:
-  //   return !(
-  //     register_valid(stage->rd, cpu)
-  //   );
-  case STR:
-    return !(
-        (stage->rs1_valid || register_valid(stage->rs1, cpu)) &&
-        (stage->rs2_valid || register_valid(stage->rs2, cpu)) &&
-        (stage->rs3_valid || register_valid(stage->rs3, cpu)));
-  case BZ:
-  case BNZ:
-    return !(
-        cpu->forward_zero->valid ||
-        flag_valid(ZERO_FLAG, cpu));
-  }
-  return 0;
-}
+// static int has_dependency(APEX_CPU *cpu, int stageId)
+// {
+//   if (!cpu)
+//     return 0;
+//   CPU_Stage *stage = &cpu->stage[stageId];
+//   if (!stage)
+//     return 0;
+//   switch (stage->opcode)
+//   {
+//   case ADD:
+//   case LDR:
+//   case SUB:
+//   case MUL:
+//   case AND:
+//   case OR:
+//   case EXOR:
+//   case STORE:
+//     return !(
+//         (stage->rs1_valid || register_valid(stage->rs1, cpu)) &&
+//         (stage->rs2_valid || register_valid(stage->rs2, cpu))
+//         // && register_valid(stage->rd, cpu) // Output dependency
+//     );
+//   case LOAD:
+//   case ADDL:
+//   case SUBL:
+//     return !(
+//         (stage->rs1_valid || register_valid(stage->rs1, cpu))
+//         // && register_valid(stage->rd, cpu) // Output dependency
+//     );
+//   // case MOVC:
+//   //   return !(
+//   //     register_valid(stage->rd, cpu)
+//   //   );
+//   case STR:
+//     return !(
+//         (stage->rs1_valid || register_valid(stage->rs1, cpu)) &&
+//         (stage->rs2_valid || register_valid(stage->rs2, cpu)) &&
+//         (stage->rs3_valid || register_valid(stage->rs3, cpu)));
+//   case BZ:
+//   case BNZ:
+//     return !(
+//         cpu->forward_zero->valid ||
+//         flag_valid(ZERO_FLAG, cpu));
+//   }
+//   return 0;
+// }
 
-static void register_wite(CPU_Stage *stage, APEX_CPU *cpu)
-{
-  int regNum = stage->rd;
-  cpu->regs[regNum] = stage->buffer;
-  cpu->regs_valid[regNum]++;
-}
+// static void register_wite(CPU_Stage *stage, APEX_CPU *cpu)
+// {
+//   int regNum = stage->rd;
+//   cpu->regs[regNum] = stage->buffer;
+//   cpu->regs_valid[regNum]++;
+// }
 
 /*
 Register Fetch (reading register file with 3 read ports)
@@ -506,7 +506,7 @@ register_read(APEX_CPU *cpu, CPU_Stage *stage, int readS1, int readS2, int readS
 void rename_registers(CPU_Stage * stage) {
   switch(stage->opcode) {
     case MOVC:
-      stage->p_rd = rename(stage->a_rd);
+      stage->p_rd = rename_register(stage->a_rd);
       snprintf(
           stage->renamed_inst_text,
           sizeof stage->renamed_inst_text,
@@ -547,7 +547,7 @@ void rename_registers(CPU_Stage * stage) {
     case ADDL:
     case SUBL:
       stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
-      stage->p_rd = rename(stage->a_rd);
+      stage->p_rd = rename_register(stage->a_rd);
       snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
@@ -567,7 +567,7 @@ void rename_registers(CPU_Stage * stage) {
     case EXOR:
       stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
       stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
-      stage->p_rd = rename(stage->a_rd);
+      stage->p_rd = rename_register(stage->a_rd);
       snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
@@ -607,31 +607,11 @@ int decode(APEX_CPU *cpu)
 
   CPU_Stage *stage = &cpu->stage[DRF];
   // forward_bus_read(cpu, stage);
-  if (stage->opcode != NOP && stage->opcode != _BUBBLE)
-  {
+  if (stage->opcode != NOP && stage->opcode != _BUBBLE) {
     rename_registers(stage);
 
-    // int has_dep = has_dependency(cpu, DRF);
     int has_dep = is_rob_full() || is_iq_full() || is_lsq_full();
     change_stall_status(DRF, cpu, has_dep);
-    // if (has_dep)
-    // cpu->stage[EX1] = create_bubble();
-    //===========================ASHMEET IMPLEMENTATION===========================
-    //1.run
-    //2.InstructionQueue(IQ):structure:DONE
-    //3.check.
-    //4.execute functions
-    //If it has dependency then send the instruction to Issue Queue(IQ) if it is not full(Insert_in_IQ)
-    //if IQ is full then stall or call create_bubble()(is_IQ_full)
-    //check from IQ which Instruction dependency is now over
-    //send that Instruction to EX1(pop_instruction)
-    // if 2 or more instructions are there whose dependency is over then take the earliest one from index
-    //if no instructions are there whose dependency is over then stall or call create_bubble()
-
-    //Implement is iq full or not then call that function here
-    //stage->issueQueueList[]
-
-    //===========================ASHMEET IMPLEMENTATION===========================
   }
 
   if (!stage->busy && !stage->stalled & !stage->flushed)
@@ -669,7 +649,16 @@ int decode(APEX_CPU *cpu)
 
     /* Copy data from decode latch to execute latch*/
     // cpu->stage[EX1] = cpu->stage[DRF];
-    // insert_to_iq()
+     insert_to_iq(stage);
+     insert_to_rob(stage);
+
+     switch (stage->opcode) {
+         case LOAD:
+         case LDR:
+         case STORE:
+         case STR:
+             insert_to_lsq(stage);
+     }
   }
   if (ENABLE_DEBUG_MESSAGES)
   {
@@ -677,12 +666,12 @@ int decode(APEX_CPU *cpu)
     print_instruction(cpu, DRF);
   }
 
-  if (stage->flushed)
-  {
-    stage->opcode = _BUBBLE;
-    stage->flushed = 0;
-    cpu->stage[EX1] = cpu->stage[DRF];
-  }
+//  if (stage->flushed)
+//  {
+//    stage->opcode = _BUBBLE;
+//    stage->flushed = 0;
+//    cpu->stage[EX1] = cpu->stage[DRF];
+//  }
 
   return 0;
 }

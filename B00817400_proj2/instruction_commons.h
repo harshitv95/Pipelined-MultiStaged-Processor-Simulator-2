@@ -1,4 +1,8 @@
 
+#ifndef _APEX_INST_COMM_H_
+#define _APEX_INST_COMM_H_
+
+
 typedef enum {
     // Arithmetic
     ADD,
@@ -48,3 +52,5 @@ typedef struct APEX_Instruction
   int instNum;
   char instText[128];
 } APEX_Instruction;
+
+#endif

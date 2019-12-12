@@ -1,4 +1,4 @@
-#include "instruction.h"
+#include "cpu_commons.h"
 
 #ifndef _APEX_ROB_H_
 #define _APEX_ROB_H_
@@ -7,14 +7,14 @@
 typedef struct ROB_Entry {
     int rob_id;
     int valid;
-    APEX_Instruction instruction;
+    CPU_Stage instruction;
     // Add more fields here
 } ROB_Entry;
 
 
 int is_rob_full();
 
-int insert_to_rob(ROB_Entry* entry);
+int insert_to_rob(CPU_Stage* instruction);
 
 
 // Pop the head instruction IF AND ONLY IF

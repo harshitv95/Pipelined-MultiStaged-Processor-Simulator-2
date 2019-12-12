@@ -1,3 +1,9 @@
+
+#ifndef _APEX_CPU_COMM_H_
+#define _APEX_CPU_COMM_H_
+
+#include "config.h"
+#include "instruction.h"
 #include "flags.h"
 
 enum
@@ -127,3 +133,6 @@ typedef struct APEX_CPU
 
 
 } APEX_CPU;
+
+
+#endif

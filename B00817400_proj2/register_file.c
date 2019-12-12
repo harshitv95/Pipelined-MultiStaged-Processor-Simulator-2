@@ -1,12 +1,12 @@
 #include "register_file.h"
 
 void init_reg_file() {
-    for (int i=0; i<A_REG_COUNT; i++) {
-        rename(i);
-    }
+//    for (int i=0; i<A_REG_COUNT; i++) {
+//        rename(i);
+//    }
 }
 
-int rename(int a_reg) {
+int rename_register(int a_reg) {
     int i = 0;
     while (i<P_REG_COUNT) {
         if (!allocated[i]) break;

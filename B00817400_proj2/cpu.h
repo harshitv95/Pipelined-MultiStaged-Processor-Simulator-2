@@ -7,8 +7,6 @@
 #ifndef _APEX_CPU_H_
 #define _APEX_CPU_H_
 
-#define NUM_FWD_BUSES 3
-
 
 
 
@@ -44,5 +42,13 @@ writeback(APEX_CPU* cpu);
 void print(APEX_CPU* cpu);
 
 CPU_Stage create_bubble();
+
+
+
+
+
+
+// 
+int flag_valid(flags flag);
 
 #endif
