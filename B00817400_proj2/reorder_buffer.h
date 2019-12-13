@@ -2,7 +2,14 @@
 
 #ifndef _APEX_ROB_H_
 #define _APEX_ROB_H_
+#define size 8
 
+
+struct queue
+{
+	int array[size];
+	int head, tail;
+};
 
 typedef struct ROB_Entry {
     int rob_id;

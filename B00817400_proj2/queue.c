@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "queue.h"
+#include "reorder_buffer.h"
 
 void queue_init(Queue *queue) {
     assert(queue);
