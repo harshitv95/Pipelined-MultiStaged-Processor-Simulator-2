@@ -3,6 +3,7 @@
 #include "issue_queue.h"
 #include "load_store_queue.h"
 #include "reorder_buffer.h"
+#include "flags.h"
 
 #ifndef _APEX_CPU_H_
 #define _APEX_CPU_H_

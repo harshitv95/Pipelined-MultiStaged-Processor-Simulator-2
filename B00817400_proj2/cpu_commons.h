@@ -5,13 +5,14 @@
 #include "config.h"
 #include "instruction.h"
 #include "flags.h"
+#include "forwarder.h"
 
 enum
 {
   F,
   DRF,
   IQ,
-  
+
   FU_INT_1,
   FU_INT_2,
   FU_MUL_1,
@@ -24,42 +25,42 @@ enum
   NUM_STAGES
 };
 
-typedef enum {
-    // 0, Default int value, thus default functional unit of an instruction will be No Type
-    __NO_FU__,
+typedef enum
+{
+  // 0, Default int value, thus default functional unit of an instruction will be No Type
+  __NO_FU__,
 
-    INT_FU,
-    MUL_FU,
-    BRANCH_FU,
-    MEM_FU,
+  INT_FU,
+  MUL_FU,
+  BRANCH_FU,
+  MEM_FU,
 
-    __NUM_FUs__
+  __NUM_FUs__
 } functional_unit_type;
-
 
 /* Model of CPU stage latch */
 typedef struct CPU_Stage
 {
-  int pc;		    // Program Counter
+  int pc; // Program Counter
   // char opcode[128];	// Operation Code
   opcode opcode;
-  int imm;		    // Literal Value
-  int rs1_value;	// Source-1 Register Value
-  int rs2_value;	// Source-2 Register Value
-  int rs3_value;	// Source-3 Register Value
-  int rs1_valid;  // Source-1 valid
+  int imm;       // Literal Value
+  int rs1_value; // Source-1 Register Value
+  int rs2_value; // Source-2 Register Value
+  int rs3_value; // Source-3 Register Value
+  int rs1_valid; // Source-1 valid
   int rs2_valid;
   int rs3_valid;
-  int buffer;		    // Latch to hold some value
-  int mem_address;	// Computed Memory Address
-  int busy;	   	    // Flag to indicate, stage is performing some action
+  int buffer;      // Latch to hold some value
+  int mem_address; // Computed Memory Address
+  int busy;        // Flag to indicate, stage is performing some action
   int empty;
-  int stalled;		  // Flag to indicate, stage is stalled
+  int stalled; // Flag to indicate, stage is stalled
   int flushed;
 
-  int a_rs1;		    // Source-1 Register Address
-  int a_rs2;		    // Source-2 Register Address
-  int a_rs3;		    // Source-2 Register Address
+  int a_rs1; // Source-1 Register Address
+  int a_rs2; // Source-2 Register Address
+  int a_rs3; // Source-2 Register Address
   int a_rd;
 
   int p_rs1;
@@ -69,21 +70,12 @@ typedef struct CPU_Stage
 
   functional_unit_type fu;
 
-  char* inst_text;
-  char* renamed_inst_text;
+  char *inst_text;
+  char *renamed_inst_text;
 
   int lsq_index;
 
 } CPU_Stage;
-
-/* Forwarding Bus to forward data and tag */
-typedef struct FWD_BUS
-{
-  int tag;
-  int data;
-  int valid;
-} FWD_BUS;
-
 
 /* Model of APEX CPU */
 typedef struct APEX_CPU
@@ -109,7 +101,7 @@ typedef struct APEX_CPU
   CPU_Stage stage[NUM_STAGES];
 
   /* Code Memory where instructions are stored */
-  APEX_Instruction* code_memory;
+  APEX_Instruction *code_memory;
   int code_memory_size;
   int num_instructions;
 
@@ -121,18 +113,12 @@ typedef struct APEX_CPU
 
   /* 2 Forwarding Buses, 1 from EX2 and another from MEM2 */
   FWD_BUS forward[NUM_FWD_BUSES];
-  FWD_BUS broadcast[NUM_FWD_BUSES*2];
+  FWD_BUS broadcast[NUM_FWD_BUSES * 2];
   FWD_BUS *forward_zero;
   FWD_BUS *forward_branch; // To forward branch decisions
 
-  /* Flags */
-  int flags[NUM_FLAGS];
-  int flags_valid[NUM_FLAGS];
-
   int fetched_before_stall;
 
-
 } APEX_CPU;
-
 
 #endif
