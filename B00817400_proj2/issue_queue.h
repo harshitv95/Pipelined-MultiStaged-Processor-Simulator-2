@@ -15,4 +15,6 @@ int insert_to_iq(CPU_Stage* instruction);
 
 CPU_Stage* pop_from_iq(int index);
 
+void update_iq_value(int tag, int value);
+
 #endif

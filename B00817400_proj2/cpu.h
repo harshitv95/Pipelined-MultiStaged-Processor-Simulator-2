@@ -32,13 +32,13 @@ decode(APEX_CPU* cpu);
 int
 execute(APEX_CPU* cpu);
 
-int
-memory1(APEX_CPU* cpu);
-int
-memory2(APEX_CPU* cpu);
+// int
+// memory1(APEX_CPU* cpu);
+// int
+// memory2(APEX_CPU* cpu);
 
-int
-writeback(APEX_CPU* cpu);
+// int
+// writeback(APEX_CPU* cpu);
 
 void print(APEX_CPU* cpu);
 

@@ -2,6 +2,9 @@
 #include "issue_queue.h"
 #include "instruction_commons.h"
 #include "cpu_commons.h"
+#include "register_file.h"
+
+int iq_index_counter = 0;
 
 int is_iq_full()
 {
@@ -20,11 +23,12 @@ int insert_to_iq(CPU_Stage *instruction)
 {
     int idx;
     if ((idx = is_iq_full()) == -1)
-        return 0;
+        return -1;
     else
     {
+        instruction->iq_index = iq_index_counter;
         issueQueueList[idx] = instruction;
-        return 1;
+        return iq_index_counter++;
     }
 }
 
@@ -92,4 +96,22 @@ CPU_Stage *pop_from_iq(int index)
     CPU_Stage *instruction = issueQueueList[index];
     issueQueueList[index] = NULL;
     return instruction;
+}
+
+void update_iq_value(int tag, int value) {
+    for (int i=0; i<ISSUE_QUEUE_CAPACITY; i++) {
+        CPU_Stage* stage = issueQueueList[i];
+        if (stage->rs1_valid && stage->p_rs1 == tag) {
+            stage->rs1_value = value;
+            stage->rs1_valid = 1;
+        }
+        if (stage->rs2_valid && stage->p_rs2 == tag) {
+            stage->rs2_value = value;
+            stage->rs2_valid = 1;
+        }
+        if (stage->rs3_valid && stage->p_rs3 == tag) {
+            stage->rs3_value = value;
+            stage->rs3_valid = 1;
+        }
+    }
 }

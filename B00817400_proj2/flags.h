@@ -4,7 +4,7 @@
 
 
 /* Zero Flag */
-int flags[NUM_FLAGS];
+int flag_values[NUM_FLAGS];
 int flags_valid[NUM_FLAGS];
 
 
@@ -29,5 +29,9 @@ void lock_zero_flag(int pc_value);
 int get_zero_flag(int pc_value);
 
 int zero_flag_valid(int branch_pc);
+
+void set_flag(flags flag, int value);
+
+int get_flag(flags flag);
 
 #endif

@@ -1,6 +1,7 @@
 #include "functional_units.h"
 #include "issue_queue.h"
 #include "reorder_buffer.h"
+#include "cpu.h"
 
 int __fu_busy[__NUM_FUs__];
 
@@ -76,7 +77,7 @@ void __fu_int_1(APEX_CPU *cpu)
         adder(stage, stage->rs1_value, -1 * (stage->imm));
         break;
     case MUL:
-        multiplier(cpu, stage->rs1_value, stage->rs2_value);
+        // multiplier(cpu, stage->rs1_value, stage->rs2_value);
         break;
     case AND:
         logical_and(cpu, stage->rs1_value, stage->rs2_value);
@@ -120,10 +121,21 @@ void __fu_int_2(APEX_CPU *cpu)
 void __fu_mul_1(APEX_CPU *cpu)
 {
     CPU_Stage *stage = &cpu->stage[FU_MUL_1];
+    switch (stage->opcode)
+    {
+    case MUL:
+        multiplier(cpu, stage->rs1_value, stage->rs2_value);
+        break;
+    }
+    cpu->stage[FU_MUL_2] = cpu->stage[FU_MUL_1];
+    cpu->stage[FU_MUL_1].opcode = _BUBBLE;
+
 }
 void __fu_mul_2(APEX_CPU *cpu)
 {
-    CPU_Stage *stage = &cpu->stage[FU_MUL_2];
+    // CPU_Stage *stage = &cpu->stage[FU_MUL_2];
+    cpu->stage[FU_MUL_3] = cpu->stage[FU_MUL_2];
+    cpu->stage[FU_MUL_2].opcode = _BUBBLE;
 }
 void __fu_mul_3(APEX_CPU *cpu)
 {
@@ -139,21 +151,57 @@ void __fu_branch(APEX_CPU *cpu)
 /*****************************/
 
 /****** Mem FU Stage (2 cycles, not pipelined) ******/
+
+
+
+
+static void memory_access(APEX_CPU *cpu, int address, int data, CPU_Stage *stage, char mode)
+{
+  switch (mode)
+  {
+  case 'r':
+    stage->buffer = cpu->data_memory[(address)];
+    // cpu->stage[stageId].buffer = read_bytes_from_memory(cpu->data_memory, address);
+    break;
+  case 'w':
+    cpu->data_memory[(address)] = data;
+    // write_bytes_to_memory(cpu->data_memory, address, cpu->stage[stageId].rs1_value);
+    break;
+  }
+}
+
+
 void __fu_mem_1(APEX_CPU *cpu)
 {
     CPU_Stage *stage = &cpu->stage[FU_MEM];
+    switch (stage->opcode)
+    {
+    case LDR:
+    case LOAD:
+        memory_access(cpu, stage->buffer, 0, stage, 'r');
+        break;
+    case STORE:
+    case STR:
+        memory_access(cpu, stage->mem_address, stage->buffer, stage, 'w');
+        break;
+    default:
+        break;
+    }
     __fu_busy[MEM_FU] = 1;
 }
 void __fu_mem_2(APEX_CPU *cpu)
 {
     CPU_Stage *stage = &cpu->stage[FU_MEM];
-
     __fu_busy[MEM_FU] = 0;
 }
 /****************************************************/
 
 int execute(APEX_CPU *cpu)
 {
+    _fu_branch(cpu);
+    _fu_int(cpu);
+    _fu_mul(cpu);
+    _fu_mem(cpu);
 }
 
 int is_fu_available(functional_unit_type fu)
@@ -167,6 +215,11 @@ void _fu_int(APEX_CPU *cpu)
     __fu_int_1(cpu);
 }
 
+void _fu_branch(APEX_CPU *cpu)
+{
+    __fu_branch(cpu);
+}
+
 void _fu_mul(APEX_CPU *cpu)
 {
     __fu_mul_3(cpu);
@@ -174,13 +227,10 @@ void _fu_mul(APEX_CPU *cpu)
     __fu_mul_1(cpu);
 }
 
+
+
 void _fu_mem(APEX_CPU *cpu)
 {
     __fu_mem_2(cpu);
     __fu_mem_1(cpu);
-}
-
-void _fu_branch(APEX_CPU *cpu)
-{
-    __fu_branch(cpu);
 }

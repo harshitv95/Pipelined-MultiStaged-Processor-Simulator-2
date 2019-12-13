@@ -25,6 +25,6 @@ int is_head_valid();
 
 // Write the output operand (value) to an ROB entry,
 // identified by rob_id
-int update_value(int rob_id, int value);
+int update_rob_value(int rob_index, int value);
 
 #endif

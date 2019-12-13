@@ -1,6 +1,6 @@
 #include "config.h"
 #include "flags.h"
-
+#include "cpu_commons.h"
 
 typedef struct P_REG {
     int data;
@@ -38,3 +38,5 @@ void architectural_register_write(int p_reg, int a_reg, int value);
 
 // Reads from Physical Register only
 int physical_register_read(int p_reg);
+
+void register_fetch(CPU_Stage * stage);

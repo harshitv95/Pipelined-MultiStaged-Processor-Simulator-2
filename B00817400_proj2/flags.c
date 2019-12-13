@@ -64,3 +64,8 @@ int zero_flag_valid(int branch_pc)
         return zero_flag[i][2];
     return 0;
 }
+
+void set_flag(flags flag, int value) {
+    flag_values[flag] = value;
+    flags_valid[flag] = 1;
+}

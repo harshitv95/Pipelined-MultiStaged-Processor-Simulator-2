@@ -73,7 +73,9 @@ typedef struct CPU_Stage
   char *inst_text;
   char *renamed_inst_text;
 
+  int iq_index;
   int lsq_index;
+  int rob_index;
 
 } CPU_Stage;
 

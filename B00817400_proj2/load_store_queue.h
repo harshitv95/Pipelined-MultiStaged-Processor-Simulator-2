@@ -14,4 +14,6 @@ CPU_Stage* get_lsq_available_instructions(int address);
 
 CPU_Stage* pop_from_lsq(int index);
 
+void update_lsq_value(int lsq_index, int value);
+
 #endif

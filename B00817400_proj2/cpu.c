@@ -206,10 +206,9 @@ display_register_contents(APEX_CPU *cpu)
   for (int i = 0; i < A_REG_COUNT; i++)
   {
     if (_architectural_register_dirty[i])
-    printf("|\tREG[%02d]\t|\tValue = %-6d\t|\n",
-           i,
-           architectural_registers[i]
-    );
+      printf("|\tREG[%02d]\t|\tValue = %-6d\t|\n",
+             i,
+             architectural_registers[i]);
   }
 }
 
@@ -287,14 +286,14 @@ int fetch(APEX_CPU *cpu)
 {
   CPU_Stage *stage = &cpu->stage[F];
 
-  if (get_flag(cpu, JUMP_FLAG) == 1)
+  if (get_flag(JUMP_FLAG) == 1)
   {
-    set_flag(cpu, JUMP_FLAG, 2);
+    set_flag(JUMP_FLAG, 2);
   }
-  else if (get_flag(cpu, JUMP_FLAG) == 2)
+  else if (get_flag(JUMP_FLAG) == 2)
   {
     cpu->pc = cpu->jump_address_register;
-    set_flag(cpu, JUMP_FLAG, 0);
+    set_flag(JUMP_FLAG, 0);
   }
 
   int code_index = get_code_index(cpu->pc);
@@ -307,7 +306,7 @@ int fetch(APEX_CPU *cpu)
   if (stage->flushed)
     cpu->stage[F] = create_bubble();
 
-  int halt = get_flag(cpu, HALT_FLAG);
+  int halt = get_flag(HALT_FLAG);
   if (halt)
     cpu->stage[F] = create_bubble();
 
@@ -414,7 +413,7 @@ static int register_valid(int regNum, APEX_CPU *cpu)
 //   return flags_valid[flag] > 0;
 // }
 
-static void lock_flag(CPU_Stage* stage)
+static void lock_flag(CPU_Stage *stage)
 {
   // flags_valid[flag]--;
   lock_zero_flag(stage->pc);
@@ -485,116 +484,112 @@ static void change_stall_status(int stageId, APEX_CPU *cpu, int stallStatus)
 /*
 Register Fetch (reading register file with 3 read ports)
 */
-void
-register_read(APEX_CPU *cpu, CPU_Stage *stage, int readS1, int readS2, int readS3)
-{
-  if (readS1 && (physical_register_valid(stage->p_rs1) > 0))
-  {
-    stage->rs1_value = physical_register_read(stage->p_rs1);
-    stage->rs1_valid = 1;
-  }
-  if (readS2 && (physical_register_valid(stage->p_rs2) > 0))
-  {
-    stage->rs2_value = physical_register_read(stage->p_rs2);
-    stage->rs2_valid = 1;
-  }
-  if (readS3 && (physical_register_valid(stage->p_rs3) > 0))
-  {
-    stage->rs3_value = physical_register_read(stage->p_rs3);
-    stage->rs3_valid = 1;
-  }
-}
+// void
+// register_read(APEX_CPU *cpu, CPU_Stage *stage, int readS1, int readS2, int readS3)
+// {
+//   if (readS1 && (physical_register_valid(stage->p_rs1) > 0))
+//   {
+//     stage->rs1_value = physical_register_read(stage->p_rs1);
+//     stage->rs1_valid = 1;
+//   }
+//   if (readS2 && (physical_register_valid(stage->p_rs2) > 0))
+//   {
+//     stage->rs2_value = physical_register_read(stage->p_rs2);
+//     stage->rs2_valid = 1;
+//   }
+//   if (readS3 && (physical_register_valid(stage->p_rs3) > 0))
+//   {
+//     stage->rs3_value = physical_register_read(stage->p_rs3);
+//     stage->rs3_valid = 1;
+//   }
+// }
 
-void rename_registers(CPU_Stage * stage) {
-  switch(stage->opcode) {
-    case MOVC:
-      stage->p_rd = rename_register(stage->a_rd);
-      snprintf(
-          stage->renamed_inst_text,
-          sizeof stage->renamed_inst_text,
-          "%s,P%d,#%d",
-          opcodeToStr(stage->opcode),
-          stage->p_rd,
-          stage->imm
-        );
-      break;
-    case STORE:
-      stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
-      stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
-      snprintf(
+void rename_registers(CPU_Stage *stage)
+{
+  switch (stage->opcode)
+  {
+  case MOVC:
+    stage->p_rd = rename_register(stage->a_rd);
+    snprintf(
+        stage->renamed_inst_text,
+        sizeof stage->renamed_inst_text,
+        "%s,P%d,#%d",
+        opcodeToStr(stage->opcode),
+        stage->p_rd,
+        stage->imm);
+    break;
+  case STORE:
+    stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
+    stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
+    snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
         "%s,P%d,P%d,#%d",
         opcodeToStr(stage->opcode),
         stage->p_rs1,
         stage->p_rs2,
-        stage->imm
-      );
-      break;
-    case STR:
-      stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
-      stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
-      stage->p_rs3 = get_physical_reg_address(stage->a_rs3);
-      snprintf(
+        stage->imm);
+    break;
+  case STR:
+    stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
+    stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
+    stage->p_rs3 = get_physical_reg_address(stage->a_rs3);
+    snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
         "%s,P%d,P%d,P%d",
         opcodeToStr(stage->opcode),
         stage->p_rs1,
         stage->p_rs2,
-        stage->p_rs3
-      );
-      break;
-    case LOAD:
-    case ADDL:
-    case SUBL:
-      stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
-      stage->p_rd = rename_register(stage->a_rd);
-      snprintf(
+        stage->p_rs3);
+    break;
+  case LOAD:
+  case ADDL:
+  case SUBL:
+    stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
+    stage->p_rd = rename_register(stage->a_rd);
+    snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
         "%s,P%d,P%d,#%d",
         opcodeToStr(stage->opcode),
         stage->p_rd,
         stage->p_rs1,
-        stage->imm
-        );
-      break;
-    case ADD:
-    case SUB:
-    case LDR:
-    case MUL:
-    case AND:
-    case OR:
-    case EXOR:
-      stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
-      stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
-      stage->p_rd = rename_register(stage->a_rd);
-      snprintf(
+        stage->imm);
+    break;
+  case ADD:
+  case SUB:
+  case LDR:
+  case MUL:
+  case AND:
+  case OR:
+  case EXOR:
+    stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
+    stage->p_rs2 = get_physical_reg_address(stage->a_rs2);
+    stage->p_rd = rename_register(stage->a_rd);
+    snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
         "%s,P%d,P%d,P%d",
         opcodeToStr(stage->opcode),
         stage->p_rd,
         stage->p_rs1,
-        stage->p_rs2
-        );
-      break;
-    case BZ:
-    case BNZ:
-    case HALT:
-      break;
-    case JUMP:
-      stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
-      snprintf(
+        stage->p_rs2);
+    break;
+  case BZ:
+  case BNZ:
+  case HALT:
+    break;
+  case JUMP:
+    stage->p_rs1 = get_physical_reg_address(stage->a_rs1);
+    snprintf(
         stage->renamed_inst_text,
         sizeof stage->renamed_inst_text,
         "%s,P%d,#%d",
         opcodeToStr(stage->opcode),
         stage->p_rs1,
-        stage->imm
-        );
-      break;
+        stage->imm);
+    break;
   }
 }
 
@@ -609,7 +604,8 @@ int decode(APEX_CPU *cpu)
 
   CPU_Stage *stage = &cpu->stage[DRF];
   // forward_bus_read(cpu, stage);
-  if (stage->opcode != NOP && stage->opcode != _BUBBLE) {
+  if (stage->opcode != NOP && stage->opcode != _BUBBLE)
+  {
     rename_registers(stage);
 
     int has_dep = is_rob_full() || is_iq_full() || is_lsq_full();
@@ -618,49 +614,26 @@ int decode(APEX_CPU *cpu)
 
   if (!stage->busy && !stage->stalled & !stage->flushed)
   {
-    switch ((opcode)(stage->opcode))
+
+    if (get_flag(HALT_FLAG))
     {
-    case LOAD:
-    case ADDL:
-    case SUBL:
-    case JUMP:
-      register_read(cpu, stage, 1, 0, 0);
-      break;
-    case ADD:
-    case SUB:
-    case MUL:
-    case STORE:
-      register_read(cpu, stage, 1, 1, 0);
-      break;
-    case STR:
-      register_read(cpu, stage, 1, 1, 1);
-      break;
-    case HALT:
-      set_flag(cpu, HALT_FLAG, 1);
       int pc_offset = cpu->code_memory_size - get_code_index(stage->pc) - 1;
       cpu->num_instructions -= pc_offset;
-      break;
-    case BZ:
-    case BNZ:
-      if (cpu->forward_zero->valid)
-        stage->buffer = cpu->forward_zero->data;
-      else if (zero_flag_valid(stage->pc))
-        stage->buffer = get_zero_flag(stage->pc);
-      break;
     }
 
     /* Copy data from decode latch to execute latch*/
     // cpu->stage[EX1] = cpu->stage[DRF];
-     insert_to_iq(stage);
-     insert_to_rob(stage);
+    insert_to_iq(stage);
+    insert_to_rob(stage);
 
-     switch (stage->opcode) {
-         case LOAD:
-         case LDR:
-         case STORE:
-         case STR:
-             insert_to_lsq(stage);
-     }
+    switch (stage->opcode)
+    {
+    case LOAD:
+    case LDR:
+    case STORE:
+    case STR:
+      insert_to_lsq(stage);
+    }
   }
   if (ENABLE_DEBUG_MESSAGES)
   {
@@ -668,27 +641,27 @@ int decode(APEX_CPU *cpu)
     print_instruction(cpu, DRF);
   }
 
-//  if (stage->flushed)
-//  {
-//    stage->opcode = _BUBBLE;
-//    stage->flushed = 0;
-//    cpu->stage[EX1] = cpu->stage[DRF];
-//  }
+  //  if (stage->flushed)
+  //  {
+  //    stage->opcode = _BUBBLE;
+  //    stage->flushed = 0;
+  //    cpu->stage[EX1] = cpu->stage[DRF];
+  //  }
 
   return 0;
 }
 
 /* Functional Units */
-static int adder(CPU_Stage *stage, int n1, int n2)
-{
-  int res = n1 + n2;
-  // if (cpu)  {
-  //   CPU_Stage* stage = &cpu->stage[EX2];
-  if (stage)
-    stage->buffer = res;
-  // }
-  return res;
-}
+// static int adder(CPU_Stage *stage, int n1, int n2)
+// {
+//   int res = n1 + n2;
+//   // if (cpu)  {
+//   //   CPU_Stage* stage = &cpu->stage[EX2];
+//   if (stage)
+//     stage->buffer = res;
+//   // }
+//   return res;
+// }
 
 // static int multiplier(APEX_CPU *cpu, int n1, int n2)
 // {
@@ -761,20 +734,20 @@ static void write_bytes_to_memory(int *data_memory, int address, int write_numbe
   }
 }
 
-static void memory_access(APEX_CPU *cpu, int address, int data, CPU_Stage *stage, char mode)
-{
-  switch (mode)
-  {
-  case 'r':
-    stage->buffer = cpu->data_memory[(address)];
-    // cpu->stage[stageId].buffer = read_bytes_from_memory(cpu->data_memory, address);
-    break;
-  case 'w':
-    cpu->data_memory[(address)] = data;
-    // write_bytes_to_memory(cpu->data_memory, address, cpu->stage[stageId].rs1_value);
-    break;
-  }
-}
+// static void memory_access(APEX_CPU *cpu, int address, int data, CPU_Stage *stage, char mode)
+// {
+//   switch (mode)
+//   {
+//   case 'r':
+//     stage->buffer = cpu->data_memory[(address)];
+//     // cpu->stage[stageId].buffer = read_bytes_from_memory(cpu->data_memory, address);
+//     break;
+//   case 'w':
+//     cpu->data_memory[(address)] = data;
+//     // write_bytes_to_memory(cpu->data_memory, address, cpu->stage[stageId].rs1_value);
+//     break;
+//   }
+// }
 /********************/
 
 void flush_instructions(APEX_CPU *cpu, int startFromStage)
@@ -881,7 +854,7 @@ void flush_instructions(APEX_CPU *cpu, int startFromStage)
 //   return 0;
 // }
 
-int branch_with_zero(APEX_CPU* cpu, CPU_Stage* stage, int zero_set, int pc_offset)
+int branch_with_zero(APEX_CPU *cpu, CPU_Stage *stage, int zero_set, int pc_offset)
 {
   // CPU_Stage *stage = &cpu->stage[EX2];
   int take_branch = (stage->buffer == zero_set);
