@@ -3,6 +3,8 @@
 int cached_pc = -1;
 int cached_idx = -1;
 
+int zero_flag_idx = 0;
+
 void set_zero_flag(int value, int pc_value)
 {
     int i = 0;
@@ -68,4 +70,12 @@ int zero_flag_valid(int branch_pc)
 void set_flag(flags flag, int value) {
     flag_values[flag] = value;
     flags_valid[flag] = 1;
+}
+
+int is_flag_valid(flags flag) {
+    return flags_valid[flag];
+}
+
+int get_flag(flags flag) {
+    return flag_values[flag];
 }

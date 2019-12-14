@@ -4,14 +4,16 @@
 
 #include "cpu.h"
 #include "register_file.h"
+#include "functional_units.h"
 
 /* Set this flag to 1 to enable debug messages */
-int ENABLE_DEBUG_MESSAGES = 0;
+int ENABLE_DEBUG_MESSAGES = 1;
 // #define ENABLE_DEBUG_MESSAGES 1
 
 CPU_Stage bubble;
 // TODO: Add stages
-char print_stages[7][16] = {"FETCH_____STAGE\0", "DECODE_RF_STAGE\0", "EX1_______STAGE\0", "EX2_______STAGE\0", "MEMORY1___STAGE\0", "MEMORY2___STAGE\0", "WRITEBACK_STAGE\0"};
+char print_stages[NUM_STAGES][16] = {
+  "FETCH_____STAGE\0", "DECODE_RN_STAGE\0", "FU_INT_1\0", "FU_INT_2\0", "FU_MUL_1\0", "FU_MUL_2\0", "FU_MUL_3\0", "FU_BR\0", "FU_MEM\0"};
 
 /*
  * This function creates and initializes APEX cpu.
@@ -24,6 +26,9 @@ APEX_cpu_init(const char *filename, int debug)
 {
   ENABLE_DEBUG_MESSAGES = debug;
   init_reg_file();
+  init_lsq();
+  init_rob();
+  init_iq();
   if (!filename)
   {
     return NULL;
@@ -44,6 +49,10 @@ APEX_cpu_init(const char *filename, int debug)
   // memset(cpu->regs_valid, 1, sizeof(int) * num_arch_registers);
   memset(cpu->stage, 0, sizeof(CPU_Stage) * NUM_STAGES);
   memset(cpu->data_memory, 0, sizeof(int) * 4000);
+  memset(cpu->data_memory_dirty, 0, sizeof(int) * 4000);
+  for (int i=0; i<NUM_STAGES; i++) {
+    cpu->stage[i].opcode = _BUBBLE;
+  }
   // memset(cpu->flags, 0, sizeof(int) * NUM_FLAGS); // Important to initialize all flags with 0
   // memset(cpu->flags_valid, 1, sizeof(int) * NUM_FLAGS);
   // for (int i = 0; i < NUM_FLAGS; i++)
@@ -65,9 +74,7 @@ APEX_cpu_init(const char *filename, int debug)
     return NULL;
   }
 
-  cpu->forward_zero = (FWD_BUS *)malloc(sizeof(FWD_BUS));
-  cpu->forward_zero->valid = 0;
-  cpu->forward[0].valid = cpu->forward[1].valid = 0;
+  init_forward_buses();
 
   if (ENABLE_DEBUG_MESSAGES)
   {
@@ -199,8 +206,69 @@ print_stage_content(char *name, APEX_CPU *cpu, CPU_Stage *stage)
 }
 
 static void
+display_instructions(APEX_CPU* cpu) {
+  printf("========= Stages =============\n");
+  for (int i=F; i<NUM_STAGES; i++) {
+    printf("%s : (I%d) %s [%s]\n",
+      print_stages[i],
+      cpu->stage[i].opcode == _BUBBLE ? "EMPTY" : cpu->stage[i].inst_text,
+      cpu->stage[i].opcode == _BUBBLE ? "" : cpu->stage[i].renamed_inst_text
+    );
+  }
+}
+
+static void
 display_register_contents(APEX_CPU *cpu)
 {
+
+  printf(
+      "\n=============== LSQ ==========\n");
+      for (int i=0; i<LOAD_STORE_QUEUE_CAPACITY; i++) {
+        if (lsq->queue[i].allocated) {
+          CPU_Stage* stage = lsq->queue[i].instruction;
+            printf("%s : (I%d) %s [%s]\n",
+            print_stages[i],
+            stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
+            stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
+          );
+        }
+      }
+
+  printf(
+    "\n=============== ROB ==========\n");
+      for (int i=0; i<REORDER_BUFFER_CAPACITY; i++) {
+        if (rob->buffer[i].allocated) {
+          CPU_Stage* stage = rob->buffer[i].instruction;
+            printf("%s : (I%d) %s [%s]\n",
+            print_stages[i],
+            stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
+            stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
+          );
+        }
+      }
+
+      printf(
+  "\n=============== IQ ==========\n");
+      for (int i=0; i<REORDER_BUFFER_CAPACITY; i++) {
+        if (issueQueueList[i] != NULL) {
+          CPU_Stage* stage = issueQueueList[i];
+            printf("%s : (I%d) %s [%s]\n",
+            print_stages[i],
+            stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
+            stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
+          );
+        }
+      }
+
+
+
+  printf(
+      "\n=============== STATE OF RENAME TABLE ==========\n");
+    for (int i=0; i<A_REG_COUNT; i++) {
+      if (rename_table[i] != -1)
+      printf("R[%d] --> P[%d]\n", i, rename_table[i]);
+    }
+
   printf(
       "\n=============== STATE OF ARCHITECTURAL REGISTER FILE ==========\n");
   for (int i = 0; i < A_REG_COUNT; i++)
@@ -215,11 +283,12 @@ display_register_contents(APEX_CPU *cpu)
 static void
 display_memory_contents(APEX_CPU *cpu)
 {
-  int MAX_MEM_DISP = 100;
+  // int MAX_MEM_DISP = 100;
   printf(
       "\n============== STATE OF DATA MEMORY =============\n");
-  for (int i = 0; i < MAX_MEM_DISP; i++)
+  for (int i = 0; i < 4000; i++)
   {
+    if (cpu->data_memory_dirty[i])
     printf("|\tMEM[%02d]\t|\tData Value = %02d\t|\n", i, cpu->data_memory[i]);
   }
 }
@@ -231,21 +300,6 @@ void print(APEX_CPU *cpu)
   // printf("--------------------------------\n");
 }
 
-void invalidate_forward_buses(APEX_CPU *cpu)
-{
-  for (int i = 0; i < NUM_FWD_BUSES; i++)
-    cpu->forward[i].valid = 0;
-  for (int i = 0; i < NUM_FWD_BUSES * 2; i++)
-    cpu->broadcast[i].valid = 0;
-  cpu->forward_zero->valid = 0;
-}
-
-/* Forwarding */
-void broadcast_tag(APEX_CPU *cpu, int forward_bus, int tag)
-{
-  cpu->broadcast[forward_bus].tag = tag;
-  cpu->broadcast[forward_bus].valid = 1;
-}
 /**************/
 
 // static int
@@ -271,6 +325,7 @@ void do_fetch(APEX_CPU *cpu, CPU_Stage *stage, int code_index)
   stage->a_rs3 = current_ins->rs3;
   stage->imm = current_ins->imm;
   stage->inst_text = current_ins->instText;
+  stage->inst_num = current_ins->instNum;
   stage->renamed_inst_text = current_ins->instText;
 
   /* Update PC for next instruction */
@@ -333,26 +388,6 @@ int fetch(APEX_CPU *cpu)
   return 0;
 }
 
-static int check_forwarded_register(int regNum, APEX_CPU *cpu)
-{
-  for (int i = 0; i < NUM_FWD_BUSES; i++)
-  {
-    if (cpu->broadcast[i].valid && cpu->broadcast[i].tag == regNum)
-      return i;
-  }
-  return -1;
-}
-
-static int check_forwarded_bus_data(int regNum, APEX_CPU *cpu)
-{
-  for (int i = 0; i < NUM_FWD_BUSES; i++)
-  {
-    if (cpu->forward[i].valid && cpu->forward[i].tag == regNum)
-      return i;
-  }
-  return -1;
-}
-
 static void
 forward_bus_read(APEX_CPU *cpu, CPU_Stage *stage)
 {
@@ -361,9 +396,9 @@ forward_bus_read(APEX_CPU *cpu, CPU_Stage *stage)
   switch (stage->opcode)
   {
   case STR:
-    if (!stage->rs3_valid && (n = check_forwarded_bus_data(stage->p_rs3, cpu)) > -1)
+    if (!stage->rs3_valid && (n = check_forwarded_bus_data(stage->p_rs3)) > -1)
     {
-      stage->rs3_value = cpu->forward[n].data;
+      stage->rs3_value = forward[n].data;
       stage->rs3_valid = 1;
     }
   case ADD:
@@ -374,18 +409,18 @@ forward_bus_read(APEX_CPU *cpu, CPU_Stage *stage)
   case EXOR:
   case OR:
   case AND:
-    if (!stage->rs2_valid && (n = check_forwarded_bus_data(stage->p_rs2, cpu)) > -1)
+    if (!stage->rs2_valid && (n = check_forwarded_bus_data(stage->p_rs2)) > -1)
     {
-      stage->rs2_value = cpu->forward[n].data;
+      stage->rs2_value = forward[n].data;
       stage->rs2_valid = 1;
     }
   case ADDL:
   case SUBL:
   case JUMP:
   case LOAD:
-    if (!stage->rs1_valid && (n = check_forwarded_bus_data(stage->p_rs1, cpu)) > -1)
+    if (!stage->rs1_valid && (n = check_forwarded_bus_data(stage->p_rs1)) > -1)
     {
-      stage->rs1_value = cpu->forward[n].data;
+      stage->rs1_value = forward[n].data;
       stage->rs1_valid = 1;
     }
     break;
@@ -399,7 +434,7 @@ static int register_valid(int regNum, APEX_CPU *cpu)
       // (cpu->forward[0].tag = regNum && cpu->forward[0].valid) ||
       // (cpu->forward[1].tag = regNum && cpu->forward[1].valid) ||
       (physical_register_valid(regNum)) ||
-      check_forwarded_register(regNum, cpu) > -1;
+      check_forwarded_register(regNum) > -1;
 }
 
 // void lock_register(APEX_CPU *cpu, int regNum)
@@ -612,8 +647,9 @@ int decode(APEX_CPU *cpu)
     change_stall_status(DRF, cpu, has_dep);
   }
 
-  if (!stage->busy && !stage->stalled & !stage->flushed)
+  if (!stage->busy && !stage->stalled && !stage->flushed && stage->opcode != _BUBBLE && stage->opcode != NOP)
   {
+    register_fetch(stage);
 
     if (get_flag(HALT_FLAG))
     {
@@ -622,7 +658,6 @@ int decode(APEX_CPU *cpu)
     }
 
     /* Copy data from decode latch to execute latch*/
-    // cpu->stage[EX1] = cpu->stage[DRF];
     insert_to_iq(stage);
     insert_to_rob(stage);
 
@@ -632,7 +667,7 @@ int decode(APEX_CPU *cpu)
     case LDR:
     case STORE:
     case STR:
-      insert_to_lsq(stage);
+      stage->lsq_index = insert_to_lsq(stage);
     }
   }
   if (ENABLE_DEBUG_MESSAGES)
@@ -649,6 +684,82 @@ int decode(APEX_CPU *cpu)
   //  }
 
   return 0;
+}
+
+void move_to_fu(APEX_CPU *cpu)
+{
+  // CPU_Stage* instructions;
+
+  // get_iq_available_instructions();
+
+  if (is_lsq_head_valid() && is_fu_available(MEM_FU))
+  {
+    LSQ_Entry *entry = pop_from_lsq();
+    cpu->stage[FU_MEM] = *(entry->instruction);
+  }
+
+  // if (is_rob_head_valid())
+  // {
+  //   ROB_Entry *entry = pop_from_rob();
+  //   architectural_register_write(entry->instruction->p_rd, entry->instruction->a_rd, entry->instruction->buffer);
+  // }
+
+  CPU_Stage **instructions = get_iq_available_instructions();
+  for (int i = 0; i < ISSUE_QUEUE_CAPACITY; i++)
+  {
+    if (instructions[i] != NULL)
+    {
+      switch (instructions[i]->opcode)
+      {
+      case STORE:
+      case STR:
+      case LOAD:
+      case LDR:
+      case ADD:
+      case ADDL:
+      case SUB:
+      case SUBL:
+      case MOVC:
+      case OR:
+        if (is_fu_available(INT_FU))
+        {
+          cpu->stage[FU_INT_1] = *(pop_from_iq(i));
+        }
+        break;
+
+      case MUL:
+        if (is_fu_available(MUL_FU))
+        {
+          cpu->stage[FU_MUL_1] = *(pop_from_iq(i));
+        }
+        break;
+
+      case BZ:
+      case BNZ:
+      case JUMP:
+        if (is_fu_available(BRANCH_FU))
+        {
+          cpu->stage[FU_BR] = *(pop_from_iq(i));
+        }
+        break;
+      default:
+        break;
+      }
+    }
+  }
+}
+
+void rob_retire(cpu)
+{
+  if (is_rob_head_valid())
+  {
+    ROB_Entry *entry = pop_from_rob();
+    opcode op = entry->instruction->opcode;
+    if (op != STR && op != STORE && op != HALT && op != JUMP && op != BZ && op != BNZ)
+    {
+      architectural_register_write(entry->instruction->p_rd, entry->instruction->a_rd, entry->instruction->buffer);
+    }
+  }
 }
 
 /* Functional Units */
@@ -1140,6 +1251,7 @@ int has_instructions(APEX_CPU *cpu)
     if (cpu->stage[i].opcode != _BUBBLE)
       return 1;
   }
+  return rob_has_more() || lsq_has_more() || iq_has_more();
   return 0;
 }
 
@@ -1168,19 +1280,24 @@ int APEX_cpu_run(APEX_CPU *cpu, int numCycles)
     // }
     // print_instructions(cpu);
     cpu->clock++;
-    if (ENABLE_DEBUG_MESSAGES)
+    // if (ENABLE_DEBUG_MESSAGES)
       printf("\n----------------------------------- CLOCK CYCLE %d -----------------------------------\n", cpu->clock);
 
-    invalidate_forward_buses(cpu);
+    invalidate_forward_buses();
     rob_retire(cpu);
-    memory2(cpu);
-    memory1(cpu);
-    execute2(cpu);
-    execute1(cpu);
+    // memory2(cpu);
+
+    // memory1(cpu);
+    // execute2(cpu);
+    execute(cpu);
+    move_to_fu(cpu);
     decode(cpu);
     fetch(cpu);
+
+    display_instructions(cpu);
+
+    display_register_contents(cpu);
   }
-  display_register_contents(cpu);
   display_memory_contents(cpu);
   printf("Simulation Completed after running for %d Cycles", cpu->clock);
   // printf("Simulation Completed after running for %d Cycles (%d - %d)", cpu->clock+1, 0, cpu->clock);

@@ -11,6 +11,8 @@
         "instruction_commons.h": "c",
         "cpu_commons.h": "c",
         "config.h": "c",
-        "register_file.h": "c"
+        "register_file.h": "c",
+        "forwarder.h": "c",
+        "stdlib.h": "c"
     }
 }

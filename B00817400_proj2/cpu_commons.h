@@ -5,13 +5,16 @@
 #include "config.h"
 #include "instruction.h"
 #include "flags.h"
+
+typedef struct CPU_Stage CPU_Stage;
+
 #include "forwarder.h"
 
 enum
 {
   F,
   DRF,
-  IQ,
+  // IQ,
 
   FU_INT_1,
   FU_INT_2,
@@ -39,7 +42,7 @@ typedef enum
 } functional_unit_type;
 
 /* Model of CPU stage latch */
-typedef struct CPU_Stage
+struct CPU_Stage
 {
   int pc; // Program Counter
   // char opcode[128];	// Operation Code
@@ -70,6 +73,7 @@ typedef struct CPU_Stage
 
   functional_unit_type fu;
 
+  int inst_num;
   char *inst_text;
   char *renamed_inst_text;
 
@@ -77,7 +81,7 @@ typedef struct CPU_Stage
   int lsq_index;
   int rob_index;
 
-} CPU_Stage;
+};
 
 /* Model of APEX CPU */
 typedef struct APEX_CPU
@@ -109,15 +113,10 @@ typedef struct APEX_CPU
 
   /* Data Memory */
   int data_memory[4000];
+  int data_memory_dirty[4000];
 
   /* Some stats */
   int ins_completed;
-
-  /* 2 Forwarding Buses, 1 from EX2 and another from MEM2 */
-  FWD_BUS forward[NUM_FWD_BUSES];
-  FWD_BUS broadcast[NUM_FWD_BUSES * 2];
-  FWD_BUS *forward_zero;
-  FWD_BUS *forward_branch; // To forward branch decisions
 
   int fetched_before_stall;
 

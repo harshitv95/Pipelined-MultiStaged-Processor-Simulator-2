@@ -4,6 +4,8 @@
 #define _APEX_FU_H_
 
 
+int evecute(APEX_CPU* cpu);
+
 int is_fu_available(functional_unit_type fu);
 
 void _fu_int(APEX_CPU* cpu);

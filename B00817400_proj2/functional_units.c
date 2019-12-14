@@ -1,7 +1,10 @@
+#include "forwarder.h"
 #include "functional_units.h"
 #include "issue_queue.h"
 #include "reorder_buffer.h"
 #include "cpu.h"
+
+#include <stdlib.h>
 
 int __fu_busy[__NUM_FUs__];
 
@@ -56,13 +59,18 @@ void __fu_int_1(APEX_CPU *cpu)
     switch (stage->opcode)
     {
     case STORE:
-        adder(stage, stage->rs2_value, stage->imm);
+        stage->mem_address = adder(NULL, stage->rs2_value, stage->imm);
         break;
     case STR:
-        adder(stage, stage->rs2_value, stage->rs3_value);
+        stage->mem_address = adder(NULL, stage->rs2_value, stage->rs3_value);
+        break;
+    case LDR:
+        stage->mem_address = adder(NULL, stage->rs1_value, stage->rs2_value);
+        break;
+    case LOAD:
+        stage->mem_address = adder(NULL, stage->rs1_value, stage->imm);
         break;
     case ADD:
-    case LDR:
         adder(stage, stage->rs1_value, stage->rs2_value);
         break;
     case SUB:
@@ -70,7 +78,6 @@ void __fu_int_1(APEX_CPU *cpu)
         break;
     case MOVC:
     case ADDL:
-    case LOAD:
         adder(stage, stage->rs1_value, stage->imm);
         break;
     case SUBL:
@@ -109,11 +116,19 @@ void __fu_int_1(APEX_CPU *cpu)
     }
 
     cpu->stage[FU_INT_2] = cpu->stage[FU_INT_1];
+    opcode op = stage->opcode;
+    if (op != STORE && op != STR && op != LDR && op != LOAD)
+        broadcast_tag(stage->p_rd);
     cpu->stage[FU_INT_1].opcode = _BUBBLE;
 }
 void __fu_int_2(APEX_CPU *cpu)
 {
     CPU_Stage *stage = &cpu->stage[FU_INT_2];
+    if (stage->opcode != _BUBBLE)
+    {
+        forward_data(stage);
+        cpu->stage[FU_INT_2].opcode = _BUBBLE;
+    }
 }
 /***************************/
 
@@ -126,10 +141,11 @@ void __fu_mul_1(APEX_CPU *cpu)
     case MUL:
         multiplier(cpu, stage->rs1_value, stage->rs2_value);
         break;
+    default:
+        break;
     }
     cpu->stage[FU_MUL_2] = cpu->stage[FU_MUL_1];
     cpu->stage[FU_MUL_1].opcode = _BUBBLE;
-
 }
 void __fu_mul_2(APEX_CPU *cpu)
 {
@@ -140,6 +156,11 @@ void __fu_mul_2(APEX_CPU *cpu)
 void __fu_mul_3(APEX_CPU *cpu)
 {
     CPU_Stage *stage = &cpu->stage[FU_MUL_3];
+    if (stage->opcode != _BUBBLE)
+    {
+        forward_data(stage);
+        cpu->stage[FU_MUL_3].opcode = _BUBBLE;
+    }
 }
 /****************************/
 
@@ -147,29 +168,44 @@ void __fu_mul_3(APEX_CPU *cpu)
 void __fu_branch(APEX_CPU *cpu)
 {
     CPU_Stage *stage = &cpu->stage[FU_BR];
+    switch (stage->opcode)
+    {
+    case BZ:
+        // TODO
+        // if (get_zero_flag(stage->pc))
+
+        break;
+    case BNZ:
+        // TODO
+        break;
+    case JUMP:
+        // TODO
+        // stage->buffer = ;
+
+    default:
+        break;
+    }
+    cpu->stage[FU_BR].opcode = _BUBBLE;
 }
 /*****************************/
 
 /****** Mem FU Stage (2 cycles, not pipelined) ******/
 
-
-
-
 static void memory_access(APEX_CPU *cpu, int address, int data, CPU_Stage *stage, char mode)
 {
-  switch (mode)
-  {
-  case 'r':
-    stage->buffer = cpu->data_memory[(address)];
-    // cpu->stage[stageId].buffer = read_bytes_from_memory(cpu->data_memory, address);
-    break;
-  case 'w':
-    cpu->data_memory[(address)] = data;
-    // write_bytes_to_memory(cpu->data_memory, address, cpu->stage[stageId].rs1_value);
-    break;
-  }
+    switch (mode)
+    {
+    case 'r':
+        stage->buffer = cpu->data_memory[(address)];
+        // cpu->stage[stageId].buffer = read_bytes_from_memory(cpu->data_memory, address);
+        break;
+    case 'w':
+        cpu->data_memory[(address)] = data;
+        cpu->data_memory_dirty[address] = 1;
+        // write_bytes_to_memory(cpu->data_memory, address, cpu->stage[stageId].rs1_value);
+        break;
+    }
 }
-
 
 void __fu_mem_1(APEX_CPU *cpu)
 {
@@ -226,8 +262,6 @@ void _fu_mul(APEX_CPU *cpu)
     __fu_mul_2(cpu);
     __fu_mul_1(cpu);
 }
-
-
 
 void _fu_mem(APEX_CPU *cpu)
 {

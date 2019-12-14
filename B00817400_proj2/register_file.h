@@ -13,7 +13,7 @@ int architectural_registers[A_REG_COUNT];
 int _architectural_register_dirty[A_REG_COUNT];
 
 int rename_table[A_REG_COUNT];
-int renamed_table[P_REG_COUNT];
+// int renamed_table[P_REG_COUNT];
 int allocated[P_REG_COUNT];
 int status[P_REG_COUNT];
 int waiting[P_REG_COUNT][ISSUE_QUEUE_CAPACITY];
@@ -21,11 +21,12 @@ int waiting[P_REG_COUNT][ISSUE_QUEUE_CAPACITY];
 void init_reg_file();
 
 int rename_register(int a_reg);
+void deallocate_register(int a_reg, int p_reg);
 
 int get_physical_reg_address(int a_reg);
 
 // In IQ, an entry at index iq_idx waits for output of this register
-int wait_for_value(int p_reg, int iq_idx);
+void wait_for_value(int p_reg, int iq_idx);
 
 int* waiting_iq_index(int p_reg);
 

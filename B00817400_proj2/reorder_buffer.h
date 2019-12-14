@@ -1,23 +1,28 @@
 #include "cpu_commons.h"
+#include "config.h"
 
 #ifndef _APEX_ROB_H_
 #define _APEX_ROB_H_
-#define size 8
-
-
-struct queue
-{
-	int array[size];
-	int head, tail;
-};
 
 typedef struct ROB_Entry {
-    int rob_id;
+    // int rob_id;
     int valid;
-    CPU_Stage instruction;
+    int allocated;
+    CPU_Stage* instruction;
     // Add more fields here
 } ROB_Entry;
 
+typedef struct REORDER_BUFFER
+{
+	ROB_Entry* buffer;
+	int head, tail;
+    int count;
+} REORDER_BUFFER;
+
+
+REORDER_BUFFER *rob;
+
+void init_rob();
 
 int is_rob_full();
 
@@ -28,10 +33,12 @@ int insert_to_rob(CPU_Stage* instruction);
 // it is valid, i.e. has the output operand available
 ROB_Entry* pop_from_rob();
 
-int is_head_valid();
+int is_rob_head_valid();
 
 // Write the output operand (value) to an ROB entry,
 // identified by rob_id
-int update_rob_value(int rob_index, int value);
+int update_rob_value(int phy_register_address, int value);
+
+int rob_has_more();
 
 #endif

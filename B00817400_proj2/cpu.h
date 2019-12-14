@@ -50,6 +50,6 @@ CPU_Stage create_bubble();
 
 
 // 
-int flag_valid(flags flag);
+// int flag_valid(flags flag);
 
 #endif
