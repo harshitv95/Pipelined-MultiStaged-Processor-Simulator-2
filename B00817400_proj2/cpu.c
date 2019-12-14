@@ -226,8 +226,7 @@ display_register_contents(APEX_CPU *cpu)
       for (int i=0; i<LOAD_STORE_QUEUE_CAPACITY; i++) {
         if (lsq->queue[i].allocated) {
           CPU_Stage* stage = lsq->queue[i].instruction;
-            printf("%s : (I%d) %s [%s]\n",
-            print_stages[i],
+            printf("(I%d) %s [%s]\n",
             stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
             stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
           );
@@ -239,8 +238,7 @@ display_register_contents(APEX_CPU *cpu)
       for (int i=0; i<REORDER_BUFFER_CAPACITY; i++) {
         if (rob->buffer[i].allocated) {
           CPU_Stage* stage = rob->buffer[i].instruction;
-            printf("%s : (I%d) %s [%s]\n",
-            print_stages[i],
+            printf("(I%d) %s [%s]\n",
             stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
             stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
           );
@@ -249,11 +247,10 @@ display_register_contents(APEX_CPU *cpu)
 
       printf(
   "\n=============== IQ ==========\n");
-      for (int i=0; i<REORDER_BUFFER_CAPACITY; i++) {
+      for (int i=0; i<ISSUE_QUEUE_CAPACITY; i++) {
         if (issueQueueList[i] != NULL) {
           CPU_Stage* stage = issueQueueList[i];
-            printf("%s : (I%d) %s [%s]\n",
-            print_stages[i],
+            printf("(I%d) %s [%s]\n",
             stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
             stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
           );
