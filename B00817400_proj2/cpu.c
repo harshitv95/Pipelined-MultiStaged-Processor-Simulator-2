@@ -211,6 +211,7 @@ display_instructions(APEX_CPU* cpu) {
   for (int i=F; i<NUM_STAGES; i++) {
     printf("%s : (I%d) %s [%s]\n",
       print_stages[i],
+      cpu->stage[i].inst_num,
       cpu->stage[i].opcode == _BUBBLE ? "EMPTY" : cpu->stage[i].inst_text,
       cpu->stage[i].opcode == _BUBBLE ? "" : cpu->stage[i].renamed_inst_text
     );
@@ -227,8 +228,9 @@ display_register_contents(APEX_CPU *cpu)
         if (lsq->queue[i].allocated) {
           CPU_Stage* stage = lsq->queue[i].instruction;
             printf("(I%d) %s [%s]\n",
-            stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
-            stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
+            stage->inst_num,
+            stage->opcode == _BUBBLE ? "EMPTY" : stage->inst_text,
+            stage->opcode == _BUBBLE ? "" : stage->renamed_inst_text
           );
         }
       }
@@ -239,8 +241,9 @@ display_register_contents(APEX_CPU *cpu)
         if (rob->buffer[i].allocated) {
           CPU_Stage* stage = rob->buffer[i].instruction;
             printf("(I%d) %s [%s]\n",
-            stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
-            stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
+            stage->inst_num,
+            stage->opcode == _BUBBLE ? "EMPTY" : stage->inst_text,
+            stage->opcode == _BUBBLE ? "" : stage->renamed_inst_text
           );
         }
       }
@@ -248,11 +251,12 @@ display_register_contents(APEX_CPU *cpu)
       printf(
   "\n=============== IQ ==========\n");
       for (int i=0; i<ISSUE_QUEUE_CAPACITY; i++) {
-        if (issueQueueList[i] != NULL) {
+        if (issueQueueList[i] != NULL && issueQueueList[i]->opcode != _BUBBLE) {
           CPU_Stage* stage = issueQueueList[i];
             printf("(I%d) %s [%s]\n",
-            stage[i].opcode == _BUBBLE ? "EMPTY" : stage[i].inst_text,
-            stage[i].opcode == _BUBBLE ? "" : stage[i].renamed_inst_text
+            stage->inst_num,
+            stage->opcode == _BUBBLE ? "EMPTY" : stage->inst_text,
+            stage->opcode == _BUBBLE ? "" : stage->renamed_inst_text
           );
         }
       }
@@ -640,7 +644,7 @@ int decode(APEX_CPU *cpu)
   {
     rename_registers(stage);
 
-    int has_dep = is_rob_full() || is_iq_full() || is_lsq_full();
+    int has_dep = is_rob_full() || (is_iq_full() == -1) || is_lsq_full();
     change_stall_status(DRF, cpu, has_dep);
   }
 
@@ -665,6 +669,7 @@ int decode(APEX_CPU *cpu)
     case STORE:
     case STR:
       stage->lsq_index = insert_to_lsq(stage);
+      break;
     }
   }
   if (ENABLE_DEBUG_MESSAGES)
@@ -672,13 +677,6 @@ int decode(APEX_CPU *cpu)
     // print_stage_content("Decode/RF", cpu, stage);
     print_instruction(cpu, DRF);
   }
-
-  //  if (stage->flushed)
-  //  {
-  //    stage->opcode = _BUBBLE;
-  //    stage->flushed = 0;
-  //    cpu->stage[EX1] = cpu->stage[DRF];
-  //  }
 
   return 0;
 }
@@ -704,7 +702,7 @@ void move_to_fu(APEX_CPU *cpu)
   CPU_Stage **instructions = get_iq_available_instructions();
   for (int i = 0; i < ISSUE_QUEUE_CAPACITY; i++)
   {
-    if (instructions[i] != NULL)
+    if (instructions[i] != NULL && instructions[i]->opcode != _BUBBLE)
     {
       switch (instructions[i]->opcode)
       {
@@ -721,6 +719,8 @@ void move_to_fu(APEX_CPU *cpu)
         if (is_fu_available(INT_FU))
         {
           cpu->stage[FU_INT_1] = *(pop_from_iq(i));
+        } else {
+          cpu->stage[FU_INT_1].opcode = _BUBBLE;
         }
         break;
 
@@ -728,6 +728,8 @@ void move_to_fu(APEX_CPU *cpu)
         if (is_fu_available(MUL_FU))
         {
           cpu->stage[FU_MUL_1] = *(pop_from_iq(i));
+        } else {
+          cpu->stage[FU_MUL_1].opcode = _BUBBLE;
         }
         break;
 
@@ -737,6 +739,8 @@ void move_to_fu(APEX_CPU *cpu)
         if (is_fu_available(BRANCH_FU))
         {
           cpu->stage[FU_BR] = *(pop_from_iq(i));
+        } else {
+          cpu->stage[FU_BR].opcode = _BUBBLE;
         }
         break;
       default:
@@ -1280,6 +1284,10 @@ int APEX_cpu_run(APEX_CPU *cpu, int numCycles)
     // if (ENABLE_DEBUG_MESSAGES)
       printf("\n----------------------------------- CLOCK CYCLE %d -----------------------------------\n", cpu->clock);
 
+
+    display_instructions(cpu);
+    display_register_contents(cpu);
+
     invalidate_forward_buses();
     rob_retire(cpu);
     // memory2(cpu);
@@ -1290,10 +1298,6 @@ int APEX_cpu_run(APEX_CPU *cpu, int numCycles)
     move_to_fu(cpu);
     decode(cpu);
     fetch(cpu);
-
-    display_instructions(cpu);
-
-    display_register_contents(cpu);
   }
   display_memory_contents(cpu);
   printf("Simulation Completed after running for %d Cycles", cpu->clock);

@@ -119,7 +119,7 @@ void __fu_int_1(APEX_CPU *cpu)
     opcode op = stage->opcode;
     if (op != STORE && op != STR && op != LDR && op != LOAD)
         broadcast_tag(stage->p_rd);
-    cpu->stage[FU_INT_1].opcode = _BUBBLE;
+    // cpu->stage[FU_INT_1].opcode = _BUBBLE;
 }
 void __fu_int_2(APEX_CPU *cpu)
 {
@@ -127,7 +127,7 @@ void __fu_int_2(APEX_CPU *cpu)
     if (stage->opcode != _BUBBLE)
     {
         forward_data(stage);
-        cpu->stage[FU_INT_2].opcode = _BUBBLE;
+        // cpu->stage[FU_INT_2].opcode = _BUBBLE;
     }
 }
 /***************************/
@@ -145,13 +145,13 @@ void __fu_mul_1(APEX_CPU *cpu)
         break;
     }
     cpu->stage[FU_MUL_2] = cpu->stage[FU_MUL_1];
-    cpu->stage[FU_MUL_1].opcode = _BUBBLE;
+    // cpu->stage[FU_MUL_1].opcode = _BUBBLE;
 }
 void __fu_mul_2(APEX_CPU *cpu)
 {
     // CPU_Stage *stage = &cpu->stage[FU_MUL_2];
     cpu->stage[FU_MUL_3] = cpu->stage[FU_MUL_2];
-    cpu->stage[FU_MUL_2].opcode = _BUBBLE;
+    // cpu->stage[FU_MUL_2].opcode = _BUBBLE;
 }
 void __fu_mul_3(APEX_CPU *cpu)
 {
@@ -159,7 +159,7 @@ void __fu_mul_3(APEX_CPU *cpu)
     if (stage->opcode != _BUBBLE)
     {
         forward_data(stage);
-        cpu->stage[FU_MUL_3].opcode = _BUBBLE;
+        // cpu->stage[FU_MUL_3].opcode = _BUBBLE;
     }
 }
 /****************************/
@@ -185,7 +185,7 @@ void __fu_branch(APEX_CPU *cpu)
     default:
         break;
     }
-    cpu->stage[FU_BR].opcode = _BUBBLE;
+    // cpu->stage[FU_BR].opcode = _BUBBLE;
 }
 /*****************************/
 

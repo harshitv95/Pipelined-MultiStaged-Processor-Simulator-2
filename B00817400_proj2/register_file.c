@@ -1,4 +1,5 @@
 #include "register_file.h"
+#include <stddef.h>
 
 void init_reg_file()
 {
@@ -30,7 +31,8 @@ int rename_register(int a_reg)
 
 void deallocate_register(int a_reg, int p_reg)
 {
-  allocated[p_reg] = 0;
+  if (p_reg != -1)
+    allocated[p_reg] = 0;
 }
 
 int get_physical_reg_address(int a_reg)
@@ -115,6 +117,7 @@ void all_register_read(CPU_Stage *stage, int readS1, int readS2, int readS3)
 
 void register_fetch(CPU_Stage *stage)
 {
+  if (stage == NULL) return;
   switch ((opcode)(stage->opcode))
   {
   case LOAD:
